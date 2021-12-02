@@ -64,8 +64,8 @@ makeCloud co' histo = flip evalStateT (defCloudSt{cloudConf = co'}) $ do
   canvasSize <- config confCanvasSize
   img <- io $ newImage canvasSize;
   modify (\st -> st { cloudImg = img })
-  bg <- config confBGColor
-  io $ fillImage ((\(x,y,z)->rgb x z y) bg) img
+  bg <- config (toGdColor . confBGColor)
+  io $ fillImage bg img
   maxWords <- config confMaxWords
   modify (\st -> st { cloudMax = snd $ head histo })
   drawWords (take maxWords histo)
@@ -222,15 +222,24 @@ calcWord w = do
     FontName f -> do io_ $ useFontConfig False
                      calc f
 
+headMay :: [a] -> Maybe a
+headMay [] = Nothing
+headMay (x:_) = Just x
+
+safeTail :: [a] -> [a]
+safeTail [] = []
+safeTail (_:xs) = xs
 
 -- | Color a word based on size.
 colorWord :: Double -> Cloud Color
 colorWord n = do
-  (r,g,b) <- config confColor
-  return $ rgb (color r) (color g) (mm $ b)
-    where color = mm . floor . (*n) . fromIntegral
-          mm = max 20 . min 255
-
+  conf <- config id
+  let colors =  confColors conf
+      color  = fromMaybe defaultWcColor $ headMay $ colors
+  -- Rotate the colors.  `confColors` should be an infinite list.
+  modify (\s -> s { cloudConf = conf { confColors = safeTail colors } })
+  return . toGdColor $ shadeWcColor n color
+  where
 -- | Filter only the kind of words we want.
 filterByGood :: [String] -> Map String Int -> Map String Int
 filterByGood badws = M.filterWithKey (\x _ -> goodWord x) where
