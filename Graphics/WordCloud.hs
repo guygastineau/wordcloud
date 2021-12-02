@@ -1,10 +1,11 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 -- | Generate word clouds.
 --
 -- A word cloud is a a graphical display of 30 to around 150 words.
 -- They are generated from weighted data sets of words. Weights are
 -- represented with size and/or colour.
--- Del.icio.us, Flickr and Technorati are examples of so-called 
--- \"tag-clouds\", and Wordle is a fantastic example of word 
+-- Del.icio.us, Flickr and Technorati are examples of so-called
+-- \"tag-clouds\", and Wordle is a fantastic example of word
 -- clouds, by which this module is inspired.
 
 module Graphics.WordCloud
@@ -22,9 +23,11 @@ module Graphics.WordCloud
     )
     where
 
+import Prelude hiding (Word)
+
 import Graphics.GD
 import Data.Map (Map)
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.List
 import Data.Ord
@@ -46,14 +49,14 @@ saveCloud _ _ = return ()
 
 -- | Generates a word cloud Image from a Histogram according to the Config.
 --
---   Example usage: 
+--   Example usage:
 --
 -- > import Graphics.GD
 -- > import Graphics.WordCloud
--- > 
+-- >
 -- > main = do img <- makeCloud def [("foo",3),("bar",2),("mu",1)]
 -- >           savePngFile "wordcloud.png" img
--- 
+--
 makeCloud :: Config     -- ^ A configuration detailing how to render the cloud.
           -> Histogram  -- ^ A dataset from which to build a word cloud.
           -> IO Image   -- ^ The rendered Image for manipulation by Graphics.GD.
@@ -82,7 +85,7 @@ toLetter c | isLetter c = c
 
 -- | Make a histogram of a list.
 histogram :: (Ord a, Num n) => [a] -> Map a n
-histogram = foldl' (flip $ flip (M.insertWith' $ const (+1)) 1) M.empty
+histogram = foldl' (flip $ flip (M.insertWith $ const (+1)) 1) M.empty
 
 -- | Draw the histogram onto the Image.
 drawWords :: Histogram -> Cloud ()
@@ -158,7 +161,7 @@ regionToRect (tl,_,br,_) = (tl,br)
 
 -- | Put a rect set of points at a certain offset.
 offset :: Rect -> Point -> Rect
-offset r p = ((ox,y1+oy),(x2+ox,y2+oy)) where 
+offset r p = ((ox,y1+oy),(x2+ox,y2+oy)) where
     (ox,oy) = p
     ((_,y1),(x2,y2)) = r
 
@@ -203,7 +206,7 @@ drawWord w = do
 -- | Calculate the region that a Word would take up.
 calcWord :: Word -> Cloud Region
 calcWord w = do
-  fontFamily <- config confFontFamily                
+  fontFamily <- config confFontFamily
   fontSize   <- config confFontSize
   min' <- config confFontSizeMin
   let calc font = io $
